@@ -6,12 +6,23 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import Header from '@/components/layout/Header'
 import type { Notification } from '@/types'
+import { HugeiconsIcon } from '@hugeicons/react'
+import { 
+  Notification03Icon, 
+  Tick01Icon, 
+  Alert01Icon,
+  CheckmarkCircle02Icon
+} from '@hugeicons/core-free-icons'
 
 export default function NotificationsPage() {
+  const [mounted, setMounted] = useState(false)
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => { loadNotifications() }, [])
+  useEffect(() => {
+    setMounted(true)
+    loadNotifications()
+  }, [])
 
   async function loadNotifications() {
     const { data: { user } } = await supabase.auth.getUser()
@@ -38,54 +49,91 @@ export default function NotificationsPage() {
     setNotifications(prev => prev.map(n => ({ ...n, is_read: true })))
   }
 
+  if (!mounted) return null
+
   const unread = notifications.filter(n => !n.is_read).length
 
   return (
-    <div>
-      <Header title="Notifications" />
-      <div className="p-6">
-        <div className="flex justify-between items-center mb-5">
-          <p className="text-sm text-gray-500">
-            {unread > 0 ? `${unread} unread notification(s)` : 'All notifications read'}
-          </p>
+    <div className="pb-12">
+      <Header title="Notification Center" />
+      <div className="p-8 space-y-6">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 px-2">
+          <div>
+            <h2 className="text-2xl font-black text-white tracking-tight">Recent Alerts</h2>
+            <p className="text-sm text-white/40 font-medium">
+              {unread > 0 ? `You have ${unread} unread notifications` : 'Your inbox is clear'}
+            </p>
+          </div>
           {unread > 0 && (
-            <Button variant="outline" size="sm" onClick={markAllRead}>
+            <Button 
+              variant="outline" 
+              onClick={markAllRead}
+              className="h-10 border-white/10 bg-white/5 hover:bg-white/10 text-white rounded-lg px-6 font-bold transition-all"
+            >
               Mark all as read
             </Button>
           )}
         </div>
 
-        <Card>
+        <Card className="glass border-white/5 overflow-hidden">
           <CardContent className="p-0">
             {loading ? (
-              <p className="p-6 text-sm text-gray-400">Loading...</p>
+              <div className="p-20 flex flex-col items-center justify-center space-y-4">
+                <div className="w-10 h-10 border-2 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin" />
+                <p className="text-sm text-white/40 font-bold uppercase tracking-widest">Loading Alerts...</p>
+              </div>
             ) : notifications.length === 0 ? (
-              <p className="p-12 text-center text-sm text-gray-400">No notifications yet.</p>
+              <div className="p-20 text-center space-y-6">
+                <div className="w-20 h-20 bg-white/5 rounded-3xl flex items-center justify-center mx-auto text-white/10">
+                  <HugeiconsIcon icon={Notification03Icon} className="w-10 h-10" />
+                </div>
+                <div className="max-w-xs mx-auto">
+                  <h3 className="text-xl font-bold text-white">Quiet for now</h3>
+                  <p className="text-sm text-white/40 mt-2 font-medium">When your automated jobs run, system alerts and failure notices will appear here.</p>
+                </div>
+              </div>
             ) : (
-              <div className="divide-y">
+              <div className="divide-y divide-white/5">
                 {notifications.map(n => (
                   <div
                     key={n.id}
-                    className={`flex items-start gap-3 p-4 ${!n.is_read ? 'bg-blue-50' : ''}`}
+                    className={cn(
+                      "flex items-start gap-5 p-6 transition-colors group",
+                      !n.is_read ? 'bg-indigo-500/[0.03] hover:bg-indigo-500/[0.05]' : 'hover:bg-white/[0.02]'
+                    )}
                   >
-                    <div className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${
-                      !n.is_read ? 'bg-blue-500' : 'bg-gray-300'
-                    }`} />
-                    <div className="flex-1 min-w-0">
-                      {n.job_title && (
-                        <p className="text-xs text-gray-400 mb-0.5">{n.job_title}</p>
-                      )}
-                      <p className="text-sm text-gray-800">{n.message}</p>
-                      <p className="text-xs text-gray-400 mt-1">
-                        {new Date(n.created_at).toLocaleString()}
-                      </p>
+                    <div className={cn(
+                      "mt-1 w-10 h-10 rounded-xl flex items-center justify-center border transition-all",
+                      !n.is_read 
+                        ? 'bg-indigo-500/20 border-indigo-500/20 text-indigo-400 shadow-[0_0_12px_rgba(79,70,229,0.1)]' 
+                        : 'bg-white/5 border-white/10 text-white/20'
+                    )}>
+                      {!n.is_read ? <HugeiconsIcon icon={Alert01Icon} className="w-5 h-5" /> : <HugeiconsIcon icon={Tick01Icon} className="w-5 h-5" />}
                     </div>
+                    
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        {n.job_title && (
+                          <span className="text-[10px] font-black uppercase tracking-widest text-indigo-400">{n.job_title}</span>
+                        )}
+                        <span className="text-[10px] text-white/20 font-bold">•</span>
+                        <span className="text-[10px] text-white/20 font-bold uppercase tracking-tighter">
+                          {new Date(n.created_at).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+                      <p className={cn(
+                        "text-sm mt-1 leading-relaxed",
+                        !n.is_read ? 'text-white font-bold' : 'text-white/60 font-medium'
+                      )}>{n.message}</p>
+                    </div>
+
                     {!n.is_read && (
                       <button
                         onClick={() => markRead(n.id)}
-                        className="text-xs text-blue-600 hover:underline shrink-0"
+                        className="p-2 rounded-lg text-indigo-400 hover:bg-indigo-500/10 transition-all opacity-0 group-hover:opacity-100"
+                        title="Mark as read"
                       >
-                        Mark read
+                        <HugeiconsIcon icon={CheckmarkCircle02Icon} className="w-5 h-5" />
                       </button>
                     )}
                   </div>
@@ -97,4 +145,8 @@ export default function NotificationsPage() {
       </div>
     </div>
   )
+}
+
+function cn(...classes: any[]) {
+  return classes.filter(Boolean).join(' ')
 }

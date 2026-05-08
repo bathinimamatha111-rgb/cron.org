@@ -7,6 +7,7 @@ export type CronJob = {
   is_enabled: boolean
   notify_on_failure: boolean
   created_at: string
+  updated_at?: string
 }
 
 export type Notification = {
